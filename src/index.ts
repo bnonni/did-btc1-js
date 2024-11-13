@@ -1,1 +1,1 @@
-console.log("Hello, World!");
+export * from './did-btc1.js';

@@ -15,14 +15,14 @@
         },
         "./browser": {
             "types": "./dist/types/index.d.ts",
-            "import": "./dist/browser.mjs",
-            "require": "./dist/browser.js"
+            "import": "./dist/browser/browser.mjs",
+            "require": "./dist/browser/browser.js"
         }
     },
     "scripts": {
         "clean": "rimraf dist coverage tests/compiled",
         "wipe": "rimraf node_modules package-lock.json",
-        "build:esm": "rimraf dist dist/types && tsc -p tsconfig.json && chmod +x ./dist/cli/drpm.js",
+        "build:esm": "rimraf dist/esm dist/types && pnpm tsc -p tsconfig.json",
         "build:cjs": "rimraf dist/cjs && tsc -p tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
         "build:browser": "rimraf dist/browser.mjs dist/browser.js && node build/bundles.js",
         "build:tests:node": "rimraf tests/compiled && pnpm tsc -p tests/tsconfig.json",
@@ -68,11 +68,15 @@
         "node": ">=18.0.0"
     },
     "dependencies": {
-        "@tbd54566975/dwn-sdk-js": "^0.5.1"
+        "@tbd54566975/dwn-sdk-js": "^0.5.1",
+        "@web5/common": "^1.1.0",
+        "@web5/crypto": "^1.0.6",
+        "@web5/dids": "^1.2.0"
     },
     "devDependencies": {
         "@playwright/test": "^1.48.2",
         "@types/chai": "^5.0.1",
+        "@types/chai-as-promised": "^8.0.1",
         "@types/eslint": "^9.6.1",
         "@types/mocha": "^10.0.9",
         "@types/node": "^22.5.4",
@@ -82,6 +86,7 @@
         "@web/test-runner-playwright": "^0.11.0",
         "c8": "^10.1.2",
         "chai": "^5.1.2",
+        "chai-as-promised": "^8.0.0",
         "esbuild": "^0.24.0",
         "eslint": "^9.14.0",
         "eslint-plugin-mocha": "^10.5.0",
@@ -92,6 +97,7 @@
         "nodemon": "^3.1.7",
         "playwright": "^1.48.2",
         "rimraf": "^6.0.1",
+        "sinon": "^19.0.2",
         "source-map-loader": "^5.0.0",
         "typescript": "^5.6.2"
     }
