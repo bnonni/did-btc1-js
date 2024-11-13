@@ -1,0 +1,98 @@
+{
+    "name": "did-btc1",
+    "version": "0.1.0",
+    "type": "module",
+    "description": "did:btc1 is a censorship resistant DID Method using the Bitcoin blockchain as a Verifiable Data Registry to announce changes to the DID document. It improves on prior work by allowing: zero-cost off-chain DID creation; aggregated updates for scalable on-chain update costs; long-term identifiers that can support frequent updates; private communication of the DID document; private DID resolution; and non-repudiation appropriate for serious contracts.",
+    "main": "./dist/cjs/index.js",
+    "module": "./dist/esm/index.js",
+    "types": "./dist/types/index.d.ts",
+    "bin": "./dist/esm/cli/btc1.js",
+    "exports": {
+        ".": {
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+        },
+        "./browser": {
+            "types": "./dist/types/index.d.ts",
+            "import": "./dist/browser.mjs",
+            "require": "./dist/browser.js"
+        }
+    },
+    "scripts": {
+        "clean": "rimraf dist coverage tests/compiled",
+        "wipe": "rimraf node_modules package-lock.json",
+        "build:esm": "rimraf dist dist/types && tsc -p tsconfig.json && chmod +x ./dist/cli/drpm.js",
+        "build:cjs": "rimraf dist/cjs && tsc -p tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
+        "build:browser": "rimraf dist/browser.mjs dist/browser.js && node build/bundles.js",
+        "build:tests:node": "rimraf tests/compiled && pnpm tsc -p tests/tsconfig.json",
+        "build:tests:browser": "rimraf tests/compiled && node build/esbuild-tests.cjs",
+        "build": "pnpm clean && pnpm build:esm && pnpm build:cjs && pnpm build:browser",
+        "lint": "eslint . --max-warnings 0",
+        "lint:fix": "eslint . --fix",
+        "test:node": "pnpm build:tests:node && pnpm c8 mocha",
+        "test:browser": "pnpm build:tests:browser && web-test-runner"
+    },
+    "homepage": "https://github.com/bnonni/did-btc1-js",
+    "bugs": {
+        "url": "https://github.com/bnonni/did-btc1-js/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/bnonni/did-btc1-js.git"
+    },
+    "license": "MPL-2.0",
+    "contributors": [
+        {
+            "name": "Bryan Nonni",
+            "url": "https://github.com/bnonni"
+        }
+    ],
+    "files": [
+        "dist",
+        "src"
+    ],
+    "keywords": [
+        "did",
+        "dids",
+        "decentralized identity",
+        "decentralized identifiers",
+        "did method",
+        "did:btc1",
+        "bitcoin"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "@tbd54566975/dwn-sdk-js": "^0.5.1"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.48.2",
+        "@types/chai": "^5.0.1",
+        "@types/eslint": "^9.6.1",
+        "@types/mocha": "^10.0.9",
+        "@types/node": "^22.5.4",
+        "@typescript-eslint/eslint-plugin": "^8.5.0",
+        "@typescript-eslint/parser": "^8.5.0",
+        "@web/test-runner": "^0.19.0",
+        "@web/test-runner-playwright": "^0.11.0",
+        "c8": "^10.1.2",
+        "chai": "^5.1.2",
+        "esbuild": "^0.24.0",
+        "eslint": "^9.14.0",
+        "eslint-plugin-mocha": "^10.5.0",
+        "globals": "^15.11.0",
+        "mocha": "^10.8.2",
+        "mocha-junit-reporter": "^2.2.1",
+        "node-stdlib-browser": "^1.2.1",
+        "nodemon": "^3.1.7",
+        "playwright": "^1.48.2",
+        "rimraf": "^6.0.1",
+        "source-map-loader": "^5.0.0",
+        "typescript": "^5.6.2"
+    }
+}
