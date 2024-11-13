@@ -12,6 +12,6 @@ esbuild.build({
 esbuild.build({
   ...browserConfig,
   format     : 'iife',
-  globalName : 'Web5',
+  globalName : 'did-btc1',
   outfile    : 'dist/browser.js',
 });

@@ -11,6 +11,5 @@ esbuild.build({
   outdir      : 'tests/compiled',
   define      : {
     ...browserConfig.define,
-    'process.env.TEST_DWN_URL': JSON.stringify(process.env.TEST_DWN_URL ?? null),
   },
 });
