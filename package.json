@@ -25,7 +25,7 @@
         "build": "pnpm clean && pnpm build:esm && pnpm build:cjs && pnpm build:browser",
         "build:esm": "rimraf dist/esm dist/types && pnpm tsc -p tsconfig.json",
         "build:cjs": "rimraf dist/cjs && tsc -p tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
-        "build:browser": "rimraf dist/browser.mjs dist/browser.js && node build/bundles.js",
+        "build:browser": "rimraf dist/browser && node build/bundles.js",
         "build:tests:node": "rimraf tests/compiled && pnpm tsc -p tests/tsconfig.json",
         "build:tests:browser": "rimraf tests/compiled && node build/esbuild-tests.cjs",
         "lint": "eslint . --max-warnings 0",

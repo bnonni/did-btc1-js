@@ -15,16 +15,15 @@ for (let lib in stdLibBrowser) {
 
 /** @type {import('esbuild').BuildOptions} */
 module.exports = {
-  entryPoints : ['./src/index.ts'],
-  bundle      : true,
-  format      : 'esm',
-  sourcemap   : true,
-  minify      : true,
-  platform    : 'browser',
-  target      : ['chrome101', 'firefox108', 'safari16'],
-  inject      : [require.resolve('node-stdlib-browser/helpers/esbuild/shim')],
-  plugins     : [polyfillProviderPlugin(polyfills)],
-  define      : {
-    'global': 'globalThis',
-  },
+  entryPoints: ['./src/index.ts'],
+  bundle: true,
+  format: 'esm',
+  sourcemap: true,
+  minify: true,
+  platform: 'browser',
+  target: ['chrome101', 'firefox108', 'safari16'],
+  inject: [require.resolve('node-stdlib-browser/helpers/esbuild/shim')],
+  plugins: [polyfillProviderPlugin(polyfills)],
+  loader: { '.wasm': 'file' },
+  define: { global: 'globalThis' },
 };

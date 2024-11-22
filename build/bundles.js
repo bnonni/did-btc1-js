@@ -5,7 +5,7 @@ import browserConfig from './esbuild-browser-config.cjs';
 esbuild.build({
   ...browserConfig,
   metafile : true,
-  outfile  : 'dist/browser.mjs',
+  outfile  : 'dist/browser/index.mjs',
 });
 
 // iife polyfilled bundle for browser
@@ -13,5 +13,5 @@ esbuild.build({
   ...browserConfig,
   format     : 'iife',
   globalName : 'DidBtc1Js',
-  outfile    : 'dist/browser.js',
+  outfile    : 'dist/browser/index.js',
 });
