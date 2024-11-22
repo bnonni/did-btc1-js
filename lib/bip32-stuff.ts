@@ -1,14 +1,12 @@
 import * as secp256k1 from '@noble/secp256k1';
 import { HDKey } from '@scure/bip32';
-import { bech32 } from '@scure/base';
+import { bech32, base64url } from '@scure/base';
 import { generateMnemonic, mnemonicToSeed } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 import { Jwk, LocalKeyManager } from '@web5/crypto';
 import { DidDocument } from '@web5/dids';
 import { initEccLib, networks, payments } from 'bitcoinjs-lib';
 
-import Base64Url from 'base64url';
-const b64url = Base64Url.default;
 
 import * as ecc from 'tiny-secp256k1';
 initEccLib(ecc);
@@ -33,9 +31,9 @@ const { x, y } = secp256k1.ProjectivePoint.fromHex(hdkey.publicKey) ?? {};
 const key = {
   kty : 'EC',
   crv : 'secp256k1',
-  x   : b64url.encode(bigintToBuffer(x)),
-  y   : b64url.encode(bigintToBuffer(y)),
-  d   : b64url.encode(Buffer.from(hdkey.privateKey))
+  x   : base64url.encode(bigintToBuffer(x)),
+  y   : base64url.encode(bigintToBuffer(y)),
+  d   : base64url.encode(Buffer.from(hdkey.privateKey))
 } as Jwk;
 const keyUri = await keyManager.importKey({ key });
 const did = `did:btc1:testnet:k1${bech32EncodedPublicKey}`;
