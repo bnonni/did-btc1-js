@@ -1,4 +1,5 @@
 import { DidCreateOptions, DidCreateVerificationMethod, DidDocument, DidService } from '@web5/dids';
+import { Network } from 'bitcoinjs-lib';
 
 export enum DidBtc1RegisteredKeyType {
     /**
@@ -14,13 +15,31 @@ export enum DidBtc1Network {
     signet = 'signet',
     regtest = 'regtest',
 }
+
+export interface DidBtc1BeaconService {
+    id: string;
+    type: string;
+    serviceEndpoint: string;
+}
+
+export type DidBtc1DocumentCreateOptions = {
+    network: Network;
+    beaconType: string;
+    verificationMethodType: string;
+    creationType: string;
+}
+
 /**
  * Options for creating a Decentralized Identifier (DID) using the DID BTC1 method.
  */
 export interface DidBtc1CreateOptions<TKms> extends DidCreateOptions<TKms> {
     version?: number;
     purpose?: string;
+    creationType?: string; // deterministic
+    verificationMethodType?: string; // SchnorrSecp256k1VerificationKey2024
+    beaconType?: string; // SingletonBeacon
     network?: 'mainnet' | 'testnet' | 'signet' | 'regtest';
+
     /**
      * Optional. An array of service endpoints associated with the DID.
      *

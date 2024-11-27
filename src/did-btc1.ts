@@ -1,5 +1,5 @@
 import * as secp256k1 from '@noble/secp256k1';
-import { bech32, base64url } from '@scure/base';
+import { base58, base64url, bech32 } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { generateMnemonic, mnemonicToSeed } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
@@ -17,12 +17,14 @@ import {
   DidMethod,
   EMPTY_DID_RESOLUTION_RESULT
 } from '@web5/dids';
-import { initEccLib, networks, payments } from 'bitcoinjs-lib';
+import { initEccLib, Network, networks, payments } from 'bitcoinjs-lib';
 import { Logger } from 'scclogger';
 import * as ecc from 'tiny-secp256k1';
 import {
+  DidBtc1BeaconService,
   DidBtc1CreateOptions,
   DidBtc1CreateResponse,
+  DidBtc1DocumentCreateOptions,
   DidBtc1Network,
   DidBtc1RegisteredKeyType
 } from './types.js';
@@ -74,22 +76,23 @@ export class DidBtc1 extends DidMethod {
       throw new Error(`Invalid network: ${options.network}`);
     }
 
+    // Set the version to the default value if not provided.
+    const version = options.version ?? 1;
+
     // Set the did version to the default value if not provided.
-    const v1 = options?.version === 1;
+    const v1 = version === 1;
 
     // Set the purpose to the default value if not provided.
-    const purpose = options?.purpose ?? '44';
-    // Set the networkName to the default value if not provided.
+    const purpose = options.purpose ?? '44';
 
-    const networkName = options?.network ?? 'mainnet';
-    // Set boolean flags for network types.
-    const isMainnet = networkName === 'mainnet';
-    const isTestSignet = networkName === 'testnet' || networkName === 'signet';
+    // Set the networkName to the default value if not provided.
+    const networkName = options.network ?? 'mainnet';
+
     // Set the network object class based on the options above.
-    const network = isMainnet ? networks.bitcoin : isTestSignet ? networks.testnet : networks.regtest;
+    const network = networkName === 'mainnet' ? networks.bitcoin : options.network === 'regtest' ? networks.regtest : networks.testnet;
 
     // Set the coin based on the network.
-    const coin = isMainnet ? 0 : 1;
+    const coin = networkName === 'mainnet' ? 0 : 1;
 
     // Set the derivation path based on the options above.
     const derivationPath = `m/${purpose}'/${coin}'/0'/0/0`;
@@ -110,71 +113,107 @@ export class DidBtc1 extends DidMethod {
 
     // Set a publicKey var from the hdkey.
     const publicKey = hdkey.publicKey;
+
     // Get x, y points from public key.
     const { x, y } = secp256k1.ProjectivePoint.fromHex(publicKey) ?? {};
 
     // Set the hrp based on the network.
-    const hrp = isMainnet ? 'bc' : 'tb';
+    const hrp = networkName === 'mainnet' ? 'bc' : 'tb';
+
     // Bech32 encode the public key.
     const methodSpecificId = bech32.encode(hrp, bech32.toWords(publicKey));
 
-    // Create JWK from x, y points and private key.
-    const key = {
-      kty : 'EC',
-      crv : 'secp256k1',
-      x   : base64url.encode(bigintToBuffer(x)),
-      y   : base64url.encode(bigintToBuffer(y)),
-      d   : base64url.encode(Buffer.from(hdkey.privateKey))
-    } as Jwk;
+    const isDeterministic = options.creationType === 'deterministic';
 
-    // Import key to key manager.
-    const keyUri = await keyManager.importKey({ key });
-    Logger.log('DidBtc1 Key Imported', keyUri);
+    const key = isDeterministic
+      ? publicKey
+      : {
+        kty : 'EC',
+        crv : 'secp256k1',
+        x   : base64url.encode(bigintToBuffer(x)),
+        y   : base64url.encode(bigintToBuffer(y)),
+        d   : base64url.encode(Buffer.from(hdkey.privateKey))
+      };
+
+    if(!isDeterministic) {
+      // Import key to key manager.
+      const keyUri = await keyManager.importKey({ key: key as Jwk });
+      Logger.log('DidBtc1 Key Imported', keyUri);
+    }
 
     // Create DID Method prefix based on version.
     const didMethodPrefix = !v1
-      ? `did:${this.methodName}:${options.version}:k1`
+      ? `did:${this.methodName}:${version}:k1`
       : `did:${this.methodName}:k1`;
 
     // Create DID from method prefix and method specific ID.
     const did = `${didMethodPrefix}:${methodSpecificId}`;
 
-    // Create DID Document.
-    const didDocument: DidDocument = {
-      '@context'           : [
-        'https://www.w3.org/ns/did/v1',
-        'https://github.com/dcdpr/did-btc1'
-      ],
-      id                 : did,
-      verificationMethod : [{
-        id           : '#initialKey',
-        type         : 'JsonWebKey',
-        controller   : did,
-        publicKeyJwk : key
-      }],
-      authentication       : ['#initialKey'],
-      assertionMethod      : ['#initialKey'],
-      capabilityInvocation : ['#initialKey'],
-      capabilityDelegation : ['#initialKey'],
-      service              : [{
-        id              : '#initial_p2pkh',
-        type            : 'SingletonBeacon',
-        serviceEndpoint : 'bitcoin:' + payments.p2pkh({ pubkey: publicKey, network }).address
-      },
-      {
-        id              : '#initial_p2wpkh',
-        type            : 'SingletonBeacon',
-        serviceEndpoint : 'bitcoin:' + payments.p2wpkh({ pubkey: publicKey, network }).address
-      },
-      {
-        id              : '#initial_p2tr',
-        type            : 'SingletonBeacon',
-        serviceEndpoint : 'bitcoin:' + payments.p2tr({ internalPubkey: publicKey.slice(1, 33), network }).address
-      }]
-    };
+    // Set the beaconType, creationType, verificationMethodType based on the options above.
+    const beaconType = options.beaconType ?? 'SingletonBeacon';
+    const creationType = options.creationType ?? 'deterministic';
+    const verificationMethodType = options.verificationMethodType ?? 'SchnorrSecp256k1VerificationKey2024';
+
+    const didDocument = this.createDidDocument({ did, key, options: { network, beaconType, creationType, verificationMethodType }});
 
     // Return mnemonic and DID Document.
     return { mnemonic, didDocument };
+  }
+
+  public static generateBeaconService({ pubkey, network, addressType }: { pubkey: Uint8Array, network: Network, addressType: string }): DidBtc1BeaconService {
+    const beaconService: Partial<DidBtc1BeaconService> = {
+      id              : `#initial_${addressType}`,
+      type            : 'SingletonBeacon',
+    };
+    switch(addressType) {
+      case 'p2pkh':
+        beaconService.serviceEndpoint = `bitcoin:${payments.p2pkh({ pubkey, network }).address}`;
+        return beaconService as DidBtc1BeaconService;
+      case 'p2wpkh':
+        beaconService.serviceEndpoint = `bitcoin:${payments.p2pkh({ pubkey, network }).address}`;
+        return beaconService as DidBtc1BeaconService;
+      case 'p2tr':
+        beaconService.serviceEndpoint = `bitcoin:${payments.p2tr({ pubkey, network }).address}`;
+        return beaconService as DidBtc1BeaconService;
+      default:
+        throw new Error(`Invalid address type: ${addressType}`);
+    }
+  }
+
+  public static createDidDocument({ did, key, options }: { did: string, key: any, options: DidBtc1DocumentCreateOptions }): DidDocument {
+    const initialDidDoc: Partial<DidDocument> = {
+      '@context'           : [
+        'https://www.w3.org/ns/did/v1',
+        'https://w3id.org/security/data-integrity/v2',
+        'https://github.com/dcdpr/did-btc1'
+      ],
+    };
+
+    return options.creationType === 'deterministic'
+      ? {
+        ...initialDidDoc,
+        id                   : did,
+        authentication       : ['#initialKey'],
+        assertionMethod      : ['#initialKey'],
+        capabilityInvocation : ['#initialKey'],
+        capabilityDelegation : ['#initialKey'],
+        verificationMethod   : [{
+          id                 : '#initialKey',
+          controller         : did,
+          type               : options.verificationMethodType,
+          publicKeyMultibase : `z${base58.encode(key as Uint8Array)}`
+        }],
+      } : {
+        ...initialDidDoc,
+        id                   : did,
+        verificationMethod   : [{
+          controller   : did,
+          publicKeyJwk : key,
+          id           : '#initialKey',
+          type         : options.verificationMethodType,
+        }],
+        service : [this.generateBeaconService({ pubkey: key, network: options.network, addressType: 'p2pkh' })]
+      };
   }
 
   /**
